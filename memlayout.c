@@ -53,7 +53,7 @@ int get_mem_layout (struct memregion *regions, unsigned int size){
 	++actualSize;
 
 	for(i = 1; i <= 0xffffffff/PAGE_SIZE; ++i){
-		address = (char*)(i*PAGE_SIZE);
+		address = (char*)(long)(i*PAGE_SIZE);
 		lastPageMode = currentPageMode;
 
 		//Determine accessibility of the region
