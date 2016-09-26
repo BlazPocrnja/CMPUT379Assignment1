@@ -1,15 +1,11 @@
 #include "memlayout.h"
-#include <stdio.h>
-
-#define PAGE_SIZE 4096
 
 int get_mem_layout (struct memregion *regions, unsigned int size){
 	
 	int actualSize = 0;
 	unsigned int i = 0; 
-	unsigned int j = 0;
 	int jmpVar = 0;
-	char *address = 0;
+	char *address = (char*)0;
 	char data;
 
 	enum tryMode{
@@ -18,17 +14,47 @@ int get_mem_layout (struct memregion *regions, unsigned int size){
 	};
 
 	enum tryMode tryingMode = reading;
-	unsigned char startingPageMode, currentPageMode;
+	unsigned char lastPageMode, currentPageMode;
 	
-	for(i = 0; i <= 0xffffffff/PAGE_SIZE; ++i){
+	//Determine accessibility of location 0
+	jmpVar = sigsetjmp(env, 1);
+	if(jmpVar == 0){	
+		//Check if we can read
+		tryingMode = reading;
+		data = *address;
+		
+		//Check if we can write
+		tryingMode = writing;
+		*address = data;
 
-		++actualSize;
-		address = (char*)(i*PAGE_SIZE);
+		//Writing successful
+		currentPageMode = MEM_RW;
+		
+	}
+	else{
+		//Something failed
 
-		if(actualSize <= size){
-			//Assign a starting address for the current memregion
-			regions->from = address;
+		if(tryingMode == writing){
+			//It failed trying to write but suceeded reading
+			currentPageMode = MEM_RO;
+
 		}
+		else{
+			//It failed trying to read
+			currentPageMode = MEM_NO;
+		}
+
+		
+	}
+	if(actualSize <= size){
+		regions[0].from = 0;
+		regions[0].mode = currentPageMode;
+	}
+	++actualSize;
+
+	for(i = 1; i <= 0xffffffff/PAGE_SIZE; ++i){
+		address = (char*)(i*PAGE_SIZE);
+		lastPageMode = currentPageMode;
 
 		//Determine accessibility of the region
 		jmpVar = sigsetjmp(env, 1);
@@ -42,85 +68,37 @@ int get_mem_layout (struct memregion *regions, unsigned int size){
 			*address = data;
 
 			//Writing successful
-			startingPageMode = MEM_RW;
-			printf("Writing");
-			
+			currentPageMode = MEM_RW;	
 		}
 		else{
 			//Something failed
 
 			if(tryingMode == writing){
 				//It failed trying to write but suceeded reading
-				startingPageMode = MEM_RO;
-				printf("Read only");
+				currentPageMode = MEM_RO;
 			}
 			else{
 				//It failed trying to read
-				startingPageMode = MEM_NO;
-				printf("no");
+				currentPageMode = MEM_NO;
 			}
 			
 		}
 		
-		if(actualSize <= size){
-			regions->mode = startingPageMode;
-		}
-		for(j = i + 1; j <= 0xfffffff/PAGE_SIZE; ++j){
+		if(currentPageMode != lastPageMode){
+			//If we're still within the array
+			if(actualSize <= size){
+				//The last page was the final page of the previous memregion
+				regions[actualSize - 1].to = address - PAGE_SIZE;
 
-			address = (char*)(j*PAGE_SIZE);
-			
-			//Determine accessibility of the page
-			jmpVar = sigsetjmp(env, 1);
-			if(jmpVar == 0){	
-				//Check if we can read
-				tryingMode = reading;
-				data = *address;
-
-				//Check if we can write
-				tryingMode = writing;
-				*address = data;
-
-				//Writing successful
-				currentPageMode = MEM_RW;
-				printf("Writing");
-			
+				//Add data to the new region
+				regions[actualSize].mode = currentPageMode;
+				regions[actualSize].from = address;
 			}
-			else{
-				//Something failed
-
-				if(tryingMode == writing){
-					//It failed trying to write but suceeded reading
-					currentPageMode = MEM_RO;
-					printf("Read only");
-				}
-				else{
-					//It failed trying to read
-					currentPageMode = MEM_NO;
-					printf("no\n");
-				}
-			
-			}
-
-			//Check if start of new memregion
-			if(startingPageMode != currentPageMode){
-				
-				//If we're still within the array
-				if(actualSize <= size){
-					//The last page was the final location of the previous memregion
-					regions->to = address - PAGE_SIZE;
-					//Increment array of memregions
-					regions += sizeof(struct memregion);
-				}
-
-				//Move i to j-1 location, 1 will be added in the next iteration
-				i = j - 1;
-
-				break;
-			}
-		}
-		
+			++actualSize;	
+		}		
 	}
-
+	//Final region ends at address 0xffffffff
+	regions[actualSize-1].to = (char*)0xffffffff;
 	return actualSize;
 }
 

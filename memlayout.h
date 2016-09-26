@@ -18,5 +18,7 @@ int get_mem_layout (struct memregion *regions, unsigned int size);
 int get_mem_diff (struct memregion *regions, unsigned int howmany,
 struct memregion *thediff, unsigned int diffsize);
 
-jmp_buf env;
+extern jmp_buf env;
+extern int PAGE_SIZE;
+
 #endif

@@ -2,9 +2,11 @@
 #include <signal.h>
 #include <stdio.h>
 
+int PAGE_SIZE = 4096;
+jmp_buf env;
+
 void sigsegv_handler(int signo) {
 	
-	printf("SEGFAULT\n");
 	siglongjmp(env,1);
 }
 
@@ -21,11 +23,13 @@ int main(void){
 	int arraySize = sizeof(regions)/sizeof(regions[0]);
 	int actualSize;
 	actualSize = get_mem_layout(&regions[0], arraySize);
-
+	
 	int i;
-	for(i = 0; i < arraySize; ++i){
-		printf("%x - %x %d \n", (unsigned int)regions[i].from, (unsigned int)regions[i].to, regions[i].mode);
+	for(i = 0; i < actualSize; ++i){
+		printf("\n%-10p - %-10p %d \n", regions[i].from, regions[i].to, regions[i].mode);
 	}
+
+	printf("\n%d\n",actualSize);
 	
 
 	
