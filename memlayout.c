@@ -98,7 +98,8 @@ int get_mem_layout (struct memregion *regions, unsigned int size){
 		}		
 	}
 	//Final region ends at address 0xffffffff
-	regions[actualSize-1].to = (char*)0xffffffff;
+	address = (char*)(long)(i*PAGE_SIZE);
+	regions[actualSize-1].to = address-1;
 	return actualSize;
 }
 
@@ -219,6 +220,10 @@ struct memregion *thediff, unsigned int diffsize){
 			}
 		}
 	}
+
+	//Set "to" address for the last diff region
+	thediff[actualDiffSize-1].to = thediff[actualDiffSize-1].from + PAGE_SIZE;
+
 	
 	return actualDiffSize;
 
