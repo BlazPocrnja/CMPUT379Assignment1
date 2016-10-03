@@ -2,6 +2,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/mman.h>
 
 int PAGE_SIZE = 4096;
 jmp_buf env;
@@ -28,11 +29,17 @@ int main(void){
 	int actualDiffSize;
 	int i;
 
+    	//Allocate buffer with read and write
+	//Source: http://www.tutorialspoint.com/unix_system_calls/mprotect.htm
+    	char *p;
+	p = malloc(1024+PAGE_SIZE-1);
+
 	actualSize = get_mem_layout(&regions[0], arraySize);
 
-    /** Print original memory layout **/
-    printf("|******************************|\n");
-    printf("MEMORY LAYOUT:");
+	//Print memory layout
+	printf("|******************************|\n");
+	printf("MEMORY LAYOUT:");
+
 	for(i = 0; i < actualSize; ++i){
 		printf("\n%-10p - %-10p %d \n", regions[i].from, regions[i].to, regions[i].mode);
 	}
@@ -40,27 +47,29 @@ int main(void){
 	printf("\nMEMORY CONTAINS %d MEMORY REGIONS\n",actualSize);
 	printf("|------------------------------|\n");
 
+	//Align to a multiple of PAGE_SIZE, assumed to be a power of two 
+    	p = (char *)(((int) p + PAGE_SIZE-1) & ~(PAGE_SIZE-1));
+	
+	//Mark buffer READ-ONLY 
+	mprotect(p, 1024, PROT_READ);
+	//Mark one PAGE_SIZE further NO-ACCESS
+	mprotect(p+PAGE_SIZE, 1024, PROT_NONE);
 
 
-
-    /** Change memory layout by placing large item on heap **/
-    int *test;
-	test = (int*) calloc(1000, sizeof(int));
-
-    // Find difference after change
+ 	//Find difference after change
 	actualDiffSize = get_mem_diff(regions, arraySize, diffs, diffSize);
 
-    printf("\n|******************************|\n");
-    printf("DIFFERENCE: %d MEMORY REGIONS\n",actualDiffSize);
+    	printf("\n|******************************|\n");
+    	printf("DIFFERENCE: %d MEMORY REGIONS\n",actualDiffSize);
 	for(i = 0; i < actualDiffSize; ++i){
 		printf("\n%-10p - %-10p %d \n", diffs[i].from, diffs[i].to, diffs[i].mode);
 	}
 	printf("|------------------------------|\n");
 
-	/** Print new memory layout **/
+	//Print new memory layout
 	actualSize = get_mem_layout(&regions[0], arraySize);
-    printf("\n|******************************|\n");
-    printf("NEW MEMORY LAYOUT:");
+    	printf("\n|******************************|\n");
+    	printf("NEW MEMORY LAYOUT:");
 	for(i = 0; i < actualSize; ++i){
 		printf("\n%-10p - %-10p %d \n", regions[i].from, regions[i].to, regions[i].mode);
 	}
