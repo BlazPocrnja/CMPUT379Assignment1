@@ -35,7 +35,7 @@ int get_mem_layout (struct memregion *regions, unsigned int size){
 		//Something failed
 
 		if(tryingMode == writing){
-			//It failed trying to write but suceeded reading
+			//It failed trying to write but succeeded reading
 			currentPageMode = MEM_RO;
 
 		}
@@ -205,18 +205,36 @@ struct memregion *thediff, unsigned int diffsize){
 		}
 		
 		//Checks all modes new and old and decides whether to add a starting address or an ending address to a diff region
-		if(lastPageMode != currentPageMode){		
-			if(lastPageMode != oldLastPageMode){
-				if(actualDiffSize <= diffsize){
-					thediff[actualDiffSize-1].to = address-1;
-				}	
-			}
-			if(currentPageMode != oldCurrentPageMode){
-				if(actualDiffSize <= diffsize){
-					thediff[actualDiffSize].from = address;
-					thediff[actualDiffSize].mode = currentPageMode;
+		if(currentPageMode != oldCurrentPageMode){
+			//We are in a difference
+			if(oldLastPageMode != lastPageMode){
+				//Could be in the middle of a difference already
+				if(currentPageMode != lastPageMode){
+					//New Diff. Close off old one. Start new one.
+					if(actualDiffSize <= diffsize){
+						thediff[actualDiffSize-1].to = address-1;
+						thediff[actualDiffSize].from = address;
+						thediff[actualDiffSize].mode = currentPageMode;
+					}
+					++actualDiffSize;	
 				}
-				++actualDiffSize;
+			}
+			else{
+				//New Diff. No part of old one.
+				if(actualDiffSize <= diffsize){
+						thediff[actualDiffSize].from = address;
+						thediff[actualDiffSize].mode = currentPageMode;
+				}
+					++actualDiffSize;	
+			}	
+		}	
+		else{
+			//No in a diff
+			if(oldLastPageMode != lastPageMode){
+				//Close that diff
+				if(actualDiffSize <= diffsize){
+						thediff[actualDiffSize-1].to = address-1;
+				}
 			}
 		}
 	}
