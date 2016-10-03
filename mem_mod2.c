@@ -2,6 +2,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 int PAGE_SIZE = 4096;
 jmp_buf env;
@@ -30,9 +31,9 @@ int main(void){
 
 	actualSize = get_mem_layout(&regions[0], arraySize);
 
-    	/** Print original memory layout **/
-    	printf("|******************************|\n");
-    	printf("MEMORY LAYOUT:");
+	/** Print original memory layout **/
+	printf("|******************************|\n");
+	printf("MEMORY LAYOUT:");
 	for(i = 0; i < actualSize; ++i){
 		printf("\n%-10p - %-10p %d \n", regions[i].from, regions[i].to, regions[i].mode);
 	}
@@ -43,10 +44,9 @@ int main(void){
 
 
 
-    	//Allocate to the heap
-    	void *heap;
-	heap = (void*) malloc(PAGE_SIZE);
-
+    	//Change the location of the end of the data segment
+    	sbrk(PAGE_SIZE);
+	
     	// Find difference after change
 	actualDiffSize = get_mem_diff(regions, arraySize, diffs, diffSize);
 

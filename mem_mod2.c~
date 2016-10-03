@@ -30,9 +30,9 @@ int main(void){
 
 	actualSize = get_mem_layout(&regions[0], arraySize);
 
-    	/** Print original memory layout **/
-    	printf("|******************************|\n");
-    	printf("MEMORY LAYOUT:");
+    /** Print original memory layout **/
+    printf("|******************************|\n");
+    printf("MEMORY LAYOUT:");
 	for(i = 0; i < actualSize; ++i){
 		printf("\n%-10p - %-10p %d \n", regions[i].from, regions[i].to, regions[i].mode);
 	}
@@ -43,15 +43,15 @@ int main(void){
 
 
 
-    	//Allocate to the heap
-    	void *heap;
-	heap = (void*) malloc(PAGE_SIZE);
+    /** Change memory layout by placing large item on heap **/
+    int *test;
+	test = (int*) calloc(1000, sizeof(int));
 
-    	// Find difference after change
+    // Find difference after change
 	actualDiffSize = get_mem_diff(regions, arraySize, diffs, diffSize);
 
-    	printf("\n|******************************|\n");
-    	printf("DIFFERENCE: %d MEMORY REGIONS\n",actualDiffSize);
+    printf("\n|******************************|\n");
+    printf("DIFFERENCE: %d MEMORY REGIONS\n",actualDiffSize);
 	for(i = 0; i < actualDiffSize; ++i){
 		printf("\n%-10p - %-10p %d \n", diffs[i].from, diffs[i].to, diffs[i].mode);
 	}
@@ -59,8 +59,8 @@ int main(void){
 
 	/** Print new memory layout **/
 	actualSize = get_mem_layout(&regions[0], arraySize);
-    	printf("\n|******************************|\n");
-    	printf("NEW MEMORY LAYOUT:");
+    printf("\n|******************************|\n");
+    printf("NEW MEMORY LAYOUT:");
 	for(i = 0; i < actualSize; ++i){
 		printf("\n%-10p - %-10p %d \n", regions[i].from, regions[i].to, regions[i].mode);
 	}
